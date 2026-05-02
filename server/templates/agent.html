@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ agent.name }} · go-fim{% endblock %}
+{% block crumb %}<span class="crumb">/ {{ agent.name }}</span>{% endblock %}
+{% block content %}
+  <h2>
+    <span class="dot dot-{{ agent.freshness }}"></span>{{ agent.name }}
+  </h2>
+  <p class="muted mono">{{ agent.id }}</p>
+  {% if agent.scan_path %}
+  <p class="mono">scans <span class="muted">{{ agent.scan_path }}</span></p>
+  {% endif %}
+  <p class="muted">
+    First seen <span title="{{ agent.first_seen }}">{{ agent.first_seen_rel }}</span>
+    {% if agent.last_report_at %}
+      · Last report <span title="{{ agent.last_report_at }}">{{ agent.last_report_rel }}</span>
+    {% endif %}
+  </p>
+
+  <h3>Timeline <span class="muted">(last {{ reports|length }})</span></h3>
+  {% include "partials/agent_reports.html" %}
+{% endblock %}
