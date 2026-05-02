@@ -1,0 +1,49 @@
+name: go-fim-demo
+
+services:
+  server:
+    build:
+      context: ../server
+    image: go-fim-server
+    environment:
+      GOFIM_DB_PATH: /data/server.db
+    volumes:
+      - server-data:/data
+    ports:
+      - "8000:8000"
+
+  agent-alpha:
+    build:
+      context: ..
+      dockerfile: build/agent.Dockerfile
+    image: go-fim-agent
+    depends_on: [server]
+    # Bind-mount host path at the SAME absolute path inside the container so
+    # report entries reference the real host paths, not /scan/...  Trade-off:
+    # hardcodes /Users/arishkumar/... into compose; fine for single-user demo.
+    volumes:
+      - ${HOME}/Developer/Learning/file-checker:${HOME}/Developer/Learning/file-checker:ro
+      - alpha-data:/data
+      - ./alpha.gofim.yml:/etc/gofim/gofim.yml:ro
+
+  agent-bravo:
+    image: go-fim-agent
+    depends_on: [server, agent-alpha]
+    volumes:
+      - ${HOME}/Developer/Learning:${HOME}/Developer/Learning:ro
+      - bravo-data:/data
+      - ./bravo.gofim.yml:/etc/gofim/gofim.yml:ro
+
+  agent-charlie:
+    image: go-fim-agent
+    depends_on: [server, agent-alpha]
+    volumes:
+      - ${HOME}/Developer/Personal:${HOME}/Developer/Personal:ro
+      - charlie-data:/data
+      - ./charlie.gofim.yml:/etc/gofim/gofim.yml:ro
+
+volumes:
+  server-data:
+  alpha-data:
+  bravo-data:
+  charlie-data:

@@ -1,0 +1,15 @@
+agent_name: agent-alpha
+path: /Users/arishkumar/Developer/Learning/file-checker
+
+exclude:
+  - '^\.git$'
+  - '^node_modules$'
+  - '^\.venv$'
+  - '^__pycache__$'
+  - '^\.mypy_cache$'
+  - '^\.build$'
+
+verbose: false
+db: /data/snapshot.db
+history_dir: /data/history
+server_url: http://server:8000
