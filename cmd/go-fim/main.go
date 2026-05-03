@@ -28,7 +28,7 @@ func main() {
 	}
 }
 
-func run() error {
+func run() (err error) {
 	configPath := flag.String("c", "gofim.yml", "path to config file")
 	verboseFlag := flag.Bool("v", false, "force verbose (overrides config)")
 	flag.Parse()
@@ -44,7 +44,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() {
+		if cerr := db.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	log.Info("opened db", "path", cfg.DBPath)
 
 	agentID, err := store.AgentID(db)

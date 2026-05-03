@@ -70,19 +70,23 @@ type Writer struct {
 
 // Save writes r as report-<ISO8601>.json under w.Dir, then prunes the oldest
 // files until at most MaxN remain. Returns the absolute path written.
-func (w *Writer) Save(r Report) (string, error) {
+func (w *Writer) Save(r Report) (path string, err error) {
 	if err := os.MkdirAll(w.Dir, dirPerm); err != nil {
 		return "", fmt.Errorf("mkdir %q: %w", w.Dir, err)
 	}
 
 	name := fmt.Sprintf("report-%s.json", r.Timestamp.Format("2006-01-02T15-04-05Z"))
-	path := filepath.Join(w.Dir, name)
+	path = filepath.Join(w.Dir, name)
 
 	f, err := os.Create(path)
 	if err != nil {
 		return "", fmt.Errorf("create %q: %w", path, err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	enc := json.NewEncoder(f)
 	enc.SetIndent("", "  ")

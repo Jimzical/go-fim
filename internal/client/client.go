@@ -73,7 +73,7 @@ func (c *Client) post(path string, body any, out any) error {
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrUnreachable, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch {
 	case resp.StatusCode >= 500:
