@@ -44,12 +44,12 @@ func New(baseURL string, insecureSkipVerify bool) *Client {
 	return &Client{
 		BaseURL: baseURL,
 		HTTP: &http.Client{
-			Timeout:   5 * time.Second,
+			Timeout: 5 * time.Second,
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: insecureSkipVerify}
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: insecureSkipVerify},
 			},
 		},
-	}	
+	}
 }
 
 // SendReport POSTs the report. Caller fills rep.AgentID / rep.AgentName /
