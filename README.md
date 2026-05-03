@@ -142,7 +142,7 @@ This triggers the release workflow which:
 
 # Future work
 
-- [x] Setup Github Actions for basic tests and release builds (possibly just a simple lint + test action for now)
+- [x] Setup GitHub Actions for basic tests and release builds (possibly just a simple lint + test action for now)
 - [ ] Maybe Graceful shutdown for agents?
 - [ ] Break down the main.go with a runner and setup command for automated config generation and db init?
 - [ ] JWT and agent adding button on the dashboard for auth and onboarding, maybe with a simple shared secret for now
