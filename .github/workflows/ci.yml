@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
     paths:
       - "**.go"
       - "go.mod"
@@ -27,7 +26,7 @@ jobs:
           go-version-file: "go.mod"
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci-lint-action@v6
         with:
           version: latest
 
