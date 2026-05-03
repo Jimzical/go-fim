@@ -6,6 +6,7 @@ package client
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,11 +40,16 @@ type Client struct {
 	HTTP    *http.Client
 }
 
-func New(baseURL string) *Client {
+func New(baseURL string, insecureSkipVerify bool) *Client {
 	return &Client{
 		BaseURL: baseURL,
-		HTTP:    &http.Client{Timeout: 5 * time.Second},
-	}
+		HTTP: &http.Client{
+			Timeout:   5 * time.Second,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: insecureSkipVerify}
+			},
+		},
+	}	
 }
 
 // SendReport POSTs the report. Caller fills rep.AgentID / rep.AgentName /
