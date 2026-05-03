@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/tools/go/cfg"
 	"gopkg.in/yaml.v3"
 )
 
@@ -14,32 +15,41 @@ import (
 type Config struct {
 	Path               string
 	Exclude            []*regexp.Regexp
-	Verbose            bool
 	DBPath             string
 	HistoryDir         string
 	ServerURL          string // empty = standalone mode (no POST)
 	AgentName          string // operator-chosen display label, sent on every /report
+	AgentID			   string
 	InsecureSkipVerify bool   // disable TLS certificate verification entirely
 }
 
-// rawConfig matches the on-disk YAML shape; we translate it into Config
-// (compiling regexes, resolving paths) so the rest of the program sees
-// ready-to-use types.
+// rawConfig is the on-disk YAML format; Load translates it into Config
 type rawConfig struct {
 	Path               string   `yaml:"path"`
 	Exclude            []string `yaml:"exclude"`
-	Verbose            bool     `yaml:"verbose"`
-	DB                 string   `yaml:"db"`
-	History            string   `yaml:"history_dir"`
 	ServerURL          string   `yaml:"server_url"`
 	AgentName          string   `yaml:"agent_name"`
+	AgentID  		   string   `yaml:"agent_id"`
 	InsecureSkipVerify bool     `yaml:"insecure_skip_verify"`
 }
 
-const (
-	defaultDB         = "./snapshot.db"
-	defaultHistoryDir = "./history"
-)
+func Default() (*Config, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("default config: %w", err)
+	}
+	return configFromRoot(cwd), nil
+}
+
+func configFromRoot(root string) *Config {
+	gofim := filepath.Join(root, ".gofim")
+	return &Config{
+		Path: root,
+		DBPath: filepath.Join(gofim, "snapshot.db"),
+		HistoryDir: filepath.Join(gofim, "history"),
+	}
+}
+
 
 // Load reads, parses, and validates the YAML config at path.
 func Load(path string) (*Config, error) {
@@ -59,37 +69,13 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("config %q: path %q: %w", path, raw.Path, err)
 	}
 
-	dbRaw := raw.DB
-	if dbRaw == "" {
-		dbRaw = defaultDB
-	}
-	resolvedDB, err := resolvePath(dbRaw)
-	if err != nil {
-		return nil, fmt.Errorf("config %q: db %q: %w", path, dbRaw, err)
-	}
+	cfg := configFromRoot(resolvedRoot)
+	cfg.ServerURL = raw.ServerURL
+	cfg.AgentName = raw.AgentName
+	cfg.AgentID = raw.AgentID
+	cfg.InsecureSkipVerify = raw.InsecureSkipVerify
 
-	historyRaw := raw.History
-	if historyRaw == "" {
-		historyRaw = defaultHistoryDir
-	}
-	resolvedHistory, err := resolvePath(historyRaw)
-	if err != nil {
-		return nil, fmt.Errorf("config %q: history_dir %q: %w", path, historyRaw, err)
-	}
-
-	if raw.ServerURL != "" && raw.AgentName == "" {
-		return nil, fmt.Errorf("config %q: 'agent_name' is required when 'server_url' is set", path)
-	}
-
-	cfg := &Config{
-		Path:               resolvedRoot,
-		Verbose:            raw.Verbose,
-		DBPath:             resolvedDB,
-		HistoryDir:         resolvedHistory,
-		ServerURL:          raw.ServerURL,
-		AgentName:          raw.AgentName,
-		InsecureSkipVerify: raw.InsecureSkipVerify,
-	}
+	
 	for i, pat := range raw.Exclude {
 		re, err := regexp.Compile(pat)
 		if err != nil {
