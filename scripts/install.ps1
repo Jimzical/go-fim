@@ -8,10 +8,21 @@ $ErrorActionPreference = "Stop"
 $Repo = "Jimzical/go-fim"
 
 # Detect architecture
-$arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
+$arch = $null
 try {
-    if ((Get-WmiObject Win32_Processor).Architecture -eq 12) { $arch = "arm64" }
+    if ((Get-WmiObject Win32_Processor).Architecture -eq 12) {
+        $arch = "arm64"
+    }
 } catch {}
+
+if (-not $arch) {
+    if ([Environment]::Is64BitOperatingSystem) {
+        $arch = "amd64"
+    } else {
+        Write-Host "Unsupported Windows architecture: 32-bit Windows is not supported. Available Windows releases are amd64 and arm64." -ForegroundColor Red
+        exit 1
+    }
+}
 
 # Get latest version if needed
 if ($Version -eq "latest") {
