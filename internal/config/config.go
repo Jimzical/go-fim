@@ -19,7 +19,7 @@ type Config struct {
 	HistoryDir         string
 	ServerURL          string // empty = standalone mode (no POST)
 	AgentName          string // operator-chosen display label, sent on every /report
-	InsecureSkipVerify bool   // skip TLS cert verification (for internal CAs)
+	InsecureSkipVerify bool   // disable TLS certificate verification entirely
 }
 
 // rawConfig matches the on-disk YAML shape; we translate it into Config
