@@ -33,7 +33,7 @@
 <p class="muted">Run this on the target box. Token expires in 1 hour.</p>
 
 <button class="copy" onclick="navigator.clipboard.writeText(document.getElementById('bootstrap').textContent)">copy</button>
-<pre id="bootstrap" class="bootstrap">mkdir -p /etc/gofim /var/lib/gofim/history
+<pre id="bootstrap" class="bootstrap">mkdir -p /etc/gofim {{ scan_path }}/.gofim
 cat > /etc/gofim/gofim.yml <<'EOF'
 agent_name: {{ agent_name }}
 path: {{ scan_path }}
@@ -43,9 +43,6 @@ exclude:
   - '{{ e }}'
 {%- endfor %}
 {%- endif %}
-verbose: false
-db: /var/lib/gofim/snapshot.db
-history_dir: /var/lib/gofim/history
 server_url: {{ server_url }}
 EOF
 
