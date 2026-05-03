@@ -27,21 +27,21 @@ def upsert_agent(
     scan_path: str,
     now: str,
 ) -> None:
-    """Create the agent row on first sight, otherwise refresh name + scan_path
+    """Non-transactional version - caller manages transaction.
+    Create the agent row on first sight, otherwise refresh name + scan_path
     + last_report_at. Operator-controlled fields (name, scan_path) follow the
     most recent /report — YAML edits propagate without manual cleanup."""
-    with conn:
-        conn.execute(
-            """
-            INSERT INTO agents (id, name, scan_path, first_seen, last_report_at)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (id) DO UPDATE SET
-              name = excluded.name,
-              scan_path = excluded.scan_path,
-              last_report_at = excluded.last_report_at
-            """,
-            (agent_id, name, scan_path, now, now),
-        )
+    conn.execute(
+        """
+        INSERT INTO agents (id, name, scan_path, first_seen, last_report_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (id) DO UPDATE SET
+          name = excluded.name,
+          scan_path = excluded.scan_path,
+          last_report_at = excluded.last_report_at
+        """,
+        (agent_id, name, scan_path, now, now),
+    )
 
 
 def save_report(
@@ -51,24 +51,24 @@ def save_report(
     payload: str,
     retention_n: int,
 ) -> None:
-    with conn:
-        conn.execute(
-            "INSERT INTO reports (agent_id, ts, json) VALUES (?, ?, ?)",
-            (agent_id, ts, payload),
-        )
-        conn.execute(
-            """
-            DELETE FROM reports
+    """Non-transactional version - caller manages transaction."""
+    conn.execute(
+        "INSERT INTO reports (agent_id, ts, json) VALUES (?, ?, ?)",
+        (agent_id, ts, payload),
+    )
+    conn.execute(
+        """
+        DELETE FROM reports
+        WHERE agent_id = ?
+          AND id NOT IN (
+            SELECT id FROM reports
             WHERE agent_id = ?
-              AND id NOT IN (
-                SELECT id FROM reports
-                WHERE agent_id = ?
-                ORDER BY ts DESC
-                LIMIT ?
-              )
-            """,
-            (agent_id, agent_id, retention_n),
-        )
+            ORDER BY ts DESC
+            LIMIT ?
+          )
+        """,
+        (agent_id, agent_id, retention_n),
+    )
 
 
 def list_agent_reports(conn: Connection, agent_id: str, limit: int) -> list[Row]:

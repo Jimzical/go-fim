@@ -46,14 +46,18 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 async def receive_report(rep: ReportPayload) -> ReportResp:
     agent_id = str(rep.agent_id)
     now = datetime.now(timezone.utc).isoformat()
-    queries.upsert_agent(conn, agent_id, rep.agent_name, rep.scan_path, now)
-    queries.save_report(
-        conn,
-        agent_id,
-        rep.timestamp.isoformat(),
-        rep.model_dump_json(),
-        RETENTION_N,
-    )
+
+    # Single transaction ensures both operations succeed or fail together
+    with conn:
+        queries.upsert_agent(conn, agent_id, rep.agent_name, rep.scan_path, now)
+        queries.save_report(
+            conn,
+            agent_id,
+            rep.timestamp.isoformat(),
+            rep.model_dump_json(),
+            RETENTION_N,
+        )
+
     return ReportResp()
 
 
