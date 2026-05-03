@@ -39,7 +39,7 @@ services:
 
   agent-bravo:
     image: go-fim-agent
-    depends_on: [agent-alpha]
+    depends_on: [agent-alpha, caddy]
     volumes:
       - ${HOME}/Developer/Learning:${HOME}/Developer/Learning:ro
       - bravo-data:/data
