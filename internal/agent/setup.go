@@ -3,6 +3,8 @@ package agent
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/Jimzical/go-fim/internal/client"
 	"github.com/Jimzical/go-fim/internal/config"
@@ -32,6 +34,11 @@ func Setup(opts SetupOpts) (err error) {
 	}
 
 	log := logger.New(false)
+
+	// Create parent directory for DBPath if it doesn't exist
+	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0755); err != nil {
+		return fmt.Errorf("create db directory: %w", err)
+	}
 
 	db, err := store.Open(cfg.DBPath)
 	if err != nil {
