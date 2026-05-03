@@ -3,8 +3,8 @@
 # Excludes are regexes matched against directory basenames; matches prune the subtree.
 
 agent_name: local-dev
-path: ~/Developer/Learning/
-# path: ~/Developer/
+path: ./
+# Set `path` to another directory if you want to scan outside the current checkout.
 
 exclude:
   - '^\.git$'
