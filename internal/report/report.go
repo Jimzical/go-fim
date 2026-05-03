@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"go-fim/internal/store"
+	"github.com/Jimzical/go-fim/internal/store"
 )
 
 const dirPerm = 0o755

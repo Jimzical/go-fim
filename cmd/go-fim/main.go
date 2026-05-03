@@ -12,13 +12,13 @@ import (
 	"go.etcd.io/bbolt"
 	"golang.org/x/sync/errgroup"
 
-	"go-fim/internal/client"
-	"go-fim/internal/config"
-	"go-fim/internal/hasher"
-	"go-fim/internal/logger"
-	"go-fim/internal/report"
-	"go-fim/internal/store"
-	"go-fim/internal/walker"
+	"github.com/Jimzical/go-fim/internal/client"
+	"github.com/Jimzical/go-fim/internal/config"
+	"github.com/Jimzical/go-fim/internal/hasher"
+	"github.com/Jimzical/go-fim/internal/logger"
+	"github.com/Jimzical/go-fim/internal/report"
+	"github.com/Jimzical/go-fim/internal/store"
+	"github.com/Jimzical/go-fim/internal/walker"
 )
 
 func main() {
