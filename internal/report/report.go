@@ -1,6 +1,5 @@
 // Package report builds the JSON payload for a scan and persists the last N
-// reports to a local history directory. The same payload shape will be POSTed
-// to the control plane in Phase 4c — keep this struct stable.
+// reports to a local history directory.
 package report
 
 import (
@@ -45,8 +44,7 @@ type ChangeEntry struct {
 	Path string `json:"path"`
 }
 
-// FromSummary translates a store.Summary into the wire format. AgentID/Name
-// are filled in by the caller in 4b once we have them.
+// FromSummary translates a store.Summary into the wire format.
 func FromSummary(totalFiles int64, s store.Summary) Report {
 	changes := make([]ChangeEntry, len(s.Changes)) // make so empty marshals as [] not null
 	for i, c := range s.Changes {

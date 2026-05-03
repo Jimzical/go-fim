@@ -6,90 +6,151 @@
 
 A file integrity monitor (FIM): Go agents walk a filesystem, hash files, diff against the last snapshot, and POST change reports to a Python FastAPI control plane. The server stores per-agent history in SQLite and serves a live Jinja+HTMX dashboard.
 
-## What it does
+## How it works
 
-- Parallel filesystem walk via `fastwalk`; 8-worker SHA256 hasher pool
+- Parallel filesystem walk via `fastwalk`; 8-worker hash pool
 - Snapshot persisted in bbolt; each run diffs against the prior one (created / modified / deleted)
-- Reports written locally to `history/` (rolling, last 10 kept); POSTed to the control plane if `server_url` is set
-- On POST failure the report is renamed `.unsent`; the next run replays pending files oldest-first before sending the fresh one
-- Server lazily creates the agent row on the first `/report` (no registration handshake); stores up to 50 reports per agent and renders a dashboard that auto-refreshes every 10s via HTMX
-- Agent identity is a stable UUID stored in bbolt; `agent_name` and `scan_path` are operator-supplied display fields sent on every report
+- Reports written locally to `<path>/.gofim/history/` (rolling, last 10 kept); POSTed to the server with Bearer auth if `server_url` is set
+- On POST failure the report is queued as `.unsent`; the next run replays pending files oldest-first before sending the fresh one
+- Agents must register via `--setup` before the server accepts their reports; registration issues a long-lived API token stored in bbolt
+- Server stores up to 50 reports per agent and renders a dashboard that auto-refreshes every 10s via HTMX
 
-> Hash is currently a placeholder (`sha256(size:mtime)`) — no file reads. Swapping to real content hashing is a one-function change in `internal/hasher/hasher.go`.
+> **Note:** Hash is currently a placeholder (`sha256(size:mtime)`) — no file reads. Swapping to real content hashing is a one-function change in `internal/hasher/hasher.go`.
 
-## Layout
+## Getting started
 
-```
-├── cmd/go-fim/main.go         # entry point
-├── internal/
-│   ├── config/config.go       # YAML loader + regex compile + ~ expansion
-│   ├── walker/walker.go       # parallel walker
-│   ├── hasher/hasher.go       # 8-worker fan-out/fan-in
-│   ├── store/
-│   │   ├── meta.go            # agent UUID persisted in bbolt
-│   │   └── snapshot.go        # diff + batched bbolt writes
-│   ├── client/client.go       # HTTP /report; ErrUnreachable classification
-│   └── report/
-│       ├── report.go          # JSON payload builder + rolling history writer
-│       └── queue.go           # .unsent FIFO queue (cap 10)
-└── server/
-    ├── app.py                 # routes
-    ├── db.py                  # SQLite init
-    ├── models.py              # Pydantic shapes
-    ├── queries.py             # all SQL
-    ├── dashboard.py           # view helpers
-    └── templates/             # Jinja2 + HTMX partials
-```
+### Standalone (no server)
 
-## Build & run
+Useful for local diffing without a control plane.
 
 ```bash
 go build -o go-fim ./cmd/go-fim
 
-./go-fim                       # uses ./gofim.yml
-./go-fim -v                    # verbose
-./go-fim -c ~/other.yml        # alternate config
-```
+# Zero-config: scans the current directory, stores state in ./.gofim/
+./go-fim -local
 
-### `gofim.yml`
-
-```yaml
-agent_name: my-agent           # required when server_url is set — display label
-path: ~/projects/foo           # required — directory to scan
-exclude:                       # optional — regexes on directory basename
+# Or with a config file:
+cat > gofim.yml <<EOF
+path: ~/projects/myapp
+exclude:
   - '^\.git$'
   - '^node_modules$'
-verbose: false
-db: ./snapshot.db
-history_dir: ./history
-server_url: http://localhost:8000   # omit for standalone mode (no POST)
+EOF
+
+./go-fim          # first run builds the snapshot; subsequent runs diff against it
+./go-fim -v       # verbose output
 ```
 
-### Control plane
+### With the control plane
+
+**1. Start the server**
 
 ```bash
 cd server
-pipenv install                 # first time only
-pipenv run uvicorn app:app --reload --port 8000
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload --port 8000
 ```
 
-Dashboard at `http://localhost:8000/`. Agent detail pages are at `/agents/{agent_id}`. SQLite store auto-created at `server/server.db`.
+Dashboard at `http://localhost:8000/`.
 
-### Multi-agent demo (Docker)
+**2. Register an agent**
 
-Runs three agents against different host paths plus the server, all in Docker:
+Open the dashboard, click **Add agent**, fill in the agent name, scan path, and any excludes. The server renders a bootstrap command — copy and run it on the agent machine:
+
+```bash
+# The dashboard generates this for you:
+go-fim --setup <JWT> -c gofim.yml
+```
+
+This calls `POST /api/setup`, creates the agent row in SQLite, and stores a long-lived API token in the agent's bbolt database. The token is sent automatically on every subsequent `/report`.
+
+**3. Schedule scans**
+
+```bash
+# crontab entry — runs every 5 minutes
+*/5 * * * * /usr/local/bin/go-fim -c /etc/gofim.yml
+```
+
+## Configuration (`gofim.yml`)
+
+```yaml
+path: ~/projects/myapp     # required — directory to scan
+agent_name: prod-web-01    # required when server_url is set — display label
+
+server_url: https://fim.example.com   # omit for standalone mode (no POST)
+exclude:                              # regexes matched against directory basename
+  - '^\.git$'
+  - '^node_modules$'
+  - '^\.cache$'
+
+insecure_skip_verify: false   # disable TLS verification (dev / self-signed certs only)
+
+# agent_id: <uuid>            # optional — pin a stable UUID instead of using the bbolt one
+```
+
+`path` supports `~` expansion and is resolved to an absolute path at load time. The bbolt snapshot and report history are always stored under `<path>/.gofim/` — not configurable. `exclude` patterns are Go regexes matched against directory **basenames**, not full paths — matching a directory skips it entirely.
+
+## CLI reference
+
+```
+go-fim [-c gofim.yml] [-v] [-local]   # cron-driven scan
+go-fim [-c gofim.yml] --setup <JWT>   # one-shot registration handshake
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-c` | `gofim.yml` | Path to config file |
+| `-v` | `false` | Force verbose output |
+| `-local` | `false` | Run without a config file, scanning cwd with no server |
+| `--setup` | — | Register this agent using the JWT from the dashboard, then exit |
+
+## Layout
+
+```
+├── cmd/go-fim/main.go              # entry point — flag parsing only
+├── internal/
+│   ├── agent/
+│   │   ├── agent.go                # Run: scan + report loop
+│   │   ├── setup.go                # Setup: registration handshake
+│   │   └── util.go                 # shared helpers
+│   ├── config/config.go            # YAML loader, regex compile, ~ expansion
+│   ├── walker/walker.go            # parallel fastwalk, exclude pruning
+│   ├── hasher/hasher.go            # 8-worker fan-out/fan-in hash pool
+│   ├── store/
+│   │   ├── meta.go                 # agent UUID + API token persisted in bbolt
+│   │   └── snapshot.go             # diff engine + batched bbolt writes
+│   ├── client/client.go            # HTTP wrapper; ErrUnreachable classification
+│   ├── logger/logger.go            # slog wrapper
+│   └── report/
+│       ├── report.go               # JSON payload builder + rolling history writer
+│       └── queue.go                # .unsent FIFO queue (cap 10)
+└── server/
+    ├── app.py                      # FastAPI routes
+    ├── auth.py                     # JWT mint / verify for setup tokens
+    ├── db.py                       # SQLite init
+    ├── models.py                   # Pydantic wire shapes
+    ├── queries.py                  # all SQL
+    ├── dashboard.py                # Row → template dict, relative time, freshness
+    └── templates/                  # Jinja2 + HTMX partials
+```
+
+## Multi-agent demo (Docker)
+
+Runs three agents against different host paths plus the server, all behind Caddy (TLS):
 
 ```bash
 docker compose -f demo/docker-compose.yml up --build
 ```
 
-Each agent scans a host directory mounted read-only, writes its bbolt snapshot and history to a named volume (so the UUID survives restarts), and POSTs to the server every 30 seconds. The compose file expects `$HOME/Developer/Learning/file-checker`, `$HOME/Developer/Learning`, and `$HOME/Developer/Personal` to exist — edit `demo/docker-compose.yml` and the corresponding `demo/*.gofim.yml` files to point at paths that exist on your machine.
+Each agent scans a host directory mounted read-only, with a named volume mounted at `<path>/.gofim/` so the snapshot and UUID survive restarts. Reports are POSTed to the server every 30 seconds.
 
-Dashboard at `http://localhost:8000/`. The stack appears as **go-fim-demo** in Docker Desktop.
+The compose file bind-mounts paths under `$HOME/Developer/...` — edit `demo/docker-compose.yml` and the matching `demo/*.gofim.yml` files if you're running on a different machine. Dashboard at `http://localhost:8000/`.
 
 ## Installation
 
-### From Source
+### From source
 
 ```bash
 go install github.com/Jimzical/go-fim/cmd/go-fim@latest
@@ -97,54 +158,49 @@ go install github.com/Jimzical/go-fim/cmd/go-fim@latest
 
 ### From GitHub Releases
 
-Download a release binary for your platform (replace `VERSION` with the release tag without the leading `v`, for example `1.0.0`):
+Download a pre-built binary for your platform (replace `VERSION` with the tag, e.g. `1.0.0`):
 
 ```bash
 VERSION=1.0.0
 
 # Linux (amd64)
-curl -Lo go-fim_${VERSION}_linux_amd64.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_linux_amd64.tar.gz
-tar -xzf go-fim_${VERSION}_linux_amd64.tar.gz
-chmod +x go-fim
-
-# Linux (arm64)
-curl -Lo go-fim_${VERSION}_linux_arm64.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_linux_arm64.tar.gz
-tar -xzf go-fim_${VERSION}_linux_arm64.tar.gz
-chmod +x go-fim
+curl -Lo go-fim.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_linux_amd64.tar.gz
+tar -xzf go-fim.tar.gz && chmod +x go-fim
 
 # macOS (Apple Silicon)
-curl -Lo go-fim_${VERSION}_darwin_arm64.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_darwin_arm64.tar.gz
-tar -xzf go-fim_${VERSION}_darwin_arm64.tar.gz
-chmod +x go-fim
+curl -Lo go-fim.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_darwin_arm64.tar.gz
+tar -xzf go-fim.tar.gz && chmod +x go-fim
 
 # macOS (Intel)
-curl -Lo go-fim_${VERSION}_darwin_amd64.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_darwin_amd64.tar.gz
-tar -xzf go-fim_${VERSION}_darwin_amd64.tar.gz
-chmod +x go-fim
+curl -Lo go-fim.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_darwin_amd64.tar.gz
+tar -xzf go-fim.tar.gz && chmod +x go-fim
 ```
 
-For Windows, download the `.zip` file from the [releases page](https://github.com/Jimzical/go-fim/releases).
+For Windows, download the `.zip` from the [releases page](https://github.com/Jimzical/go-fim/releases).
 
 ## Releasing
 
-This project uses [GoReleaser](https://goreleaser.com/) for automated releases. To create a new release:
+Tag-driven via GoReleaser. Creates binaries for Linux / macOS / Windows × amd64 / arm64 and a changelog from conventional commits.
 
 ```bash
-# Create and push a version tag
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.2.3
+git push origin v1.2.3
 ```
 
-This triggers the release workflow which:
-1. Builds binaries for Linux, macOS, and Windows (amd64 + arm64)
-2. Creates a GitHub Release with auto-generated changelog
-3. Uploads all binaries as release assets
+## Development
 
-# Future work
+```bash
+# Agent
+go vet ./...
+gofmt -l .          # CI fails if this prints anything; run gofmt -w . to fix
+go mod tidy
 
-- [x] Setup GitHub Actions for basic tests and release builds (possibly just a simple lint + test action for now)
-- [ ] Maybe Graceful shutdown for agents?
-- [ ] Break down the main.go with a runner and setup command for automated config generation and db init?
-- [ ] JWT and agent adding button on the dashboard for auth and onboarding, maybe with a simple shared secret for now
-- [ ] Possible sqlite backup strategy for server.db?
+# Server
+cd server
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload --port 8000
+```
 
+CI runs `golangci-lint`, `gofmt -l .`, `go mod tidy` drift check, `go vet`, and `go build`.

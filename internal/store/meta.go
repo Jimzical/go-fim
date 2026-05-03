@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	metaBucket = []byte("meta")
-	agentIDKey = []byte("agent_id")
+	metaBucket  = []byte("meta")
+	agentIDKey  = []byte("agent_id")
+	apiTokenKey = []byte("api_token")
 )
 
 // Open opens (or creates) the bbolt database at path. bbolt is single-writer:
@@ -23,10 +24,41 @@ func Open(path string) (*bbolt.DB, error) {
 	return db, nil
 }
 
+// GetAPIToken reads the API token stored at setup time. Returns "" if setup has
+// not been completed yet (token absent from bbolt).
+func GetAPIToken(db *bbolt.DB) (string, error) {
+	var token string
+	err := db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(metaBucket)
+		if b == nil {
+			return nil
+		}
+		if v := b.Get(apiTokenKey); v != nil {
+			token = string(v)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("api token: %w", err)
+	}
+	return token, nil
+}
+
+// SaveAPIToken persists the server-issued API token after a successful setup
+// handshake. Overwrites any previously stored token.
+func SaveAPIToken(db *bbolt.DB, token string) error {
+	return db.Update(func(tx *bbolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists(metaBucket)
+		if err != nil {
+			return err
+		}
+		return b.Put(apiTokenKey, []byte(token))
+	})
+}
+
 // AgentID returns this agent's stable UUID. Lazy-inits on first call: generates
-// a v4 UUID, stores it under meta/agent_id, and returns it. One Update txn
-// (not View-then-Update) so first-run init is race-free; on the steady-state
-// path bbolt only fsyncs if Put actually ran.
+// a v4 UUID and stores it under meta/agent_id. Single Update txn (not
+// View-then-Update) so concurrent first-run callers are race-free.
 func AgentID(db *bbolt.DB) (string, error) {
 	var id string
 	err := db.Update(func(tx *bbolt.Tx) error {

@@ -1,7 +1,7 @@
 // Package client is the agent-side HTTP wrapper around the FastAPI control
-// plane. One call (SendReport) — the server lazily creates the agent row on
-// first /report. Errors are classified so the queue/replay layer (4e) knows
-// when to retry vs drop.
+// plane. SendReport posts a scan report; RegisterAgent completes the one-shot
+// setup handshake (gated by a server-issued JWT). Errors are classified so the
+// queue/replay layer knows when to retry vs drop.
 package client
 
 import (
@@ -36,13 +36,15 @@ func (e *HTTPError) Error() string {
 // Client posts to the go-fim control plane. Single 5s timeout covers
 // connect+read; cron-driven agents shouldn't hang the run on a sick server.
 type Client struct {
-	BaseURL string
-	HTTP    *http.Client
+	BaseURL  string
+	APIToken string // server-issued opaque token; sent as Bearer on every /report
+	HTTP     *http.Client
 }
 
-func New(baseURL string, insecureSkipVerify bool) *Client {
+func New(baseURL, apiToken string, insecureSkipVerify bool) *Client {
 	return &Client{
-		BaseURL: baseURL,
+		BaseURL:  baseURL,
+		APIToken: apiToken,
 		HTTP: &http.Client{
 			Timeout: 5 * time.Second,
 			Transport: &http.Transport{
@@ -56,11 +58,38 @@ func New(baseURL string, insecureSkipVerify bool) *Client {
 // rep.ScanPath before calling - the server keys on AgentID and refreshes
 // the operator-supplied display fields on every report.
 func (c *Client) SendReport(rep report.Report) error {
-	return c.post("/report", rep, nil)
+	return c.post("/report", rep, nil, c.APIToken)
 }
 
-// post is the shared encode/dispatch path. out=nil means "discard body".
-func (c *Client) post(path string, body any, out any) error {
+// RegisterReq is the body sent to /api/setup. The agent_name and scan_path
+// live in the JWT claims, so the server doesn't need them in the body.
+type RegisterReq struct {
+	AgentID string `json:"agent_id"`
+}
+
+// RegisterResp echoes back what the server bound to this agent_id, so the
+// CLI can log a confirmation line ("registered prod-web-01 → /var/www").
+type RegisterResp struct {
+	AgentID   string `json:"agent_id"`
+	AgentName string `json:"agent_name"`
+	ScanPath  string `json:"scan_path"`
+	APIToken  string `json:"api_token"`
+}
+
+// RegisterAgent completes the one-shot setup handshake. The token is a JWT
+// the operator pasted in from the dashboard; the server validates it and
+// inserts the agent row keyed by agentID.
+func (c *Client) RegisterAgent(token, agentID string) (*RegisterResp, error) {
+	var resp RegisterResp
+	if err := c.post("/api/setup", RegisterReq{AgentID: agentID}, &resp, token); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// post is the shared encode/dispatch path. out=nil discards the body;
+// token="" skips the Authorization header.
+func (c *Client) post(path string, body, out any, token string) error {
 	u, err := url.JoinPath(c.BaseURL, path)
 	if err != nil {
 		return fmt.Errorf("build url: %w", err)
@@ -74,6 +103,9 @@ func (c *Client) post(path string, body any, out any) error {
 		return fmt.Errorf("new request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 
 	resp, err := c.HTTP.Do(req)
 	if err != nil {

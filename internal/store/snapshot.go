@@ -86,9 +86,8 @@ func (s *Summary) record(kind ChangeKind, path string) {
 // channel closes deletes keys for paths that disappeared. Returns a Summary
 // describing the diff.
 //
-// Returns when hashedIn is closed (success) or ctx is cancelled (peer
-// goroutine errored). On cancellation the snapshot may be partially updated
-// — bbolt guarantees per-transaction atomicity, not per-run.
+// On cancellation the snapshot may be partially updated — bbolt guarantees
+// per-transaction atomicity, not per-run.
 func Run(ctx context.Context, logger *slog.Logger, db *bbolt.DB, hashedIn <-chan walker.FileMeta) (Summary, error) {
 	priorSnapshot, err := loadOld(db)
 	if err != nil {

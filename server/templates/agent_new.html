@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}add agent · go-fim{% endblock %}
+{% block crumb %}<span class="crumb">/ add agent</span>{% endblock %}
+{% block content %}
+<style>
+  .form { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
+  .form label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; }
+  .form input, .form textarea {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font: inherit;
+  }
+  .form .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .form input:focus, .form textarea:focus { outline: none; border-color: var(--accent); }
+  .form button {
+    align-self: flex-start;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .form button:hover { filter: brightness(1.1); }
+</style>
+
+<h2>Add agent</h2>
+<p class="muted">Fill this in, paste the resulting bootstrap script on the target box. Token is valid for 1 hour.</p>
+
+<form method="post" action="/agents/new" class="form">
+  <label>
+    Agent name
+    <input name="agent_name" required maxlength="255" placeholder="prod-web-01" autofocus>
+  </label>
+
+  <label>
+    Scan path
+    <input name="scan_path" required placeholder="/var/www" class="mono">
+  </label>
+
+  <label>
+    Excludes <span class="muted">(one regex per line, optional)</span>
+    <textarea name="excludes" rows="6" class="mono" placeholder="^\.git$&#10;^node_modules$&#10;^\.venv$"></textarea>
+  </label>
+
+  <button type="submit">Generate bootstrap script</button>
+</form>
+{% endblock %}
