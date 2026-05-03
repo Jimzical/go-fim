@@ -150,33 +150,54 @@ The compose file bind-mounts paths under `$HOME/Developer/...` — edit `demo/do
 
 ## Installation
 
+### Quick Install (Recommended)
+
+**Linux / macOS:**
+```bash
+curl -sSL https://raw.githubusercontent.com/Jimzical/go-fim/main/scripts/install.sh | bash
+sudo mv go-fim /usr/local/bin/
+```
+
+**Windows (PowerShell):**
+```powershell
+iwr -useb https://raw.githubusercontent.com/Jimzical/go-fim/main/scripts/install.ps1 | iex
+# Then move go-fim.exe to a directory in your PATH
+```
+
 ### From source
 
 ```bash
 go install github.com/Jimzical/go-fim/cmd/go-fim@latest
 ```
 
-### From GitHub Releases
+### Manual download from GitHub Releases
 
-Download a pre-built binary for your platform (replace `VERSION` with the tag, e.g. `1.0.0`):
+Download a pre-built binary for your platform from the [releases page](https://github.com/Jimzical/go-fim/releases).
 
+**Linux / macOS:**
 ```bash
 VERSION=1.0.0
 
 # Linux (amd64)
 curl -Lo go-fim.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_linux_amd64.tar.gz
 tar -xzf go-fim.tar.gz && chmod +x go-fim
+sudo mv go-fim /usr/local/bin/
 
 # macOS (Apple Silicon)
 curl -Lo go-fim.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_darwin_arm64.tar.gz
 tar -xzf go-fim.tar.gz && chmod +x go-fim
+sudo mv go-fim /usr/local/bin/
 
 # macOS (Intel)
 curl -Lo go-fim.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_darwin_amd64.tar.gz
 tar -xzf go-fim.tar.gz && chmod +x go-fim
+sudo mv go-fim /usr/local/bin/
 ```
 
-For Windows, download the `.zip` from the [releases page](https://github.com/Jimzical/go-fim/releases).
+**Windows:**
+1. Download the `.zip` file for your architecture from the [releases page](https://github.com/Jimzical/go-fim/releases)
+2. Extract `go-fim.exe`
+3. Add to a directory in your PATH
 
 ## Releasing
 
