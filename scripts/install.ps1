@@ -44,6 +44,23 @@ $zip = "$env:TEMP\go-fim-$([guid]::NewGuid()).zip"
 $extractDir = "$env:TEMP\go-fim-extract-$([guid]::NewGuid())"
 
 Invoke-WebRequest $url -OutFile $zip -UseBasicParsing
+
+$checksumUrl = "https://github.com/$Repo/releases/download/v$Version/checksums.txt"
+$checksumFile = "$env:TEMP\go-fim-checksums-$([guid]::NewGuid()).txt"
+Invoke-WebRequest $checksumUrl -OutFile $checksumFile -UseBasicParsing
+
+$archiveName = "go-fim_${Version}_windows_${arch}.zip"
+$expected = (Get-Content $checksumFile | Where-Object {$_ -match $archiveName}) -replace '\s+.*', ''
+if (-not $expected) {
+    Write-Host "Failed to find checksum for $archiveName" -ForegroundColor Red
+    exit 1
+}
+$actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+if ($expected -ne $actual) {
+    Write-Host "Checksum mismatch! Expected: $expected, Actual: $actual" -ForegroundColor Red
+    exit 1
+}
+
 Expand-Archive $zip -DestinationPath $extractDir -Force
 Move-Item "$extractDir\go-fim.exe" ".\go-fim.exe" -Force
 Remove-Item $zip, $extractDir -Recurse -Force -EA SilentlyContinue
