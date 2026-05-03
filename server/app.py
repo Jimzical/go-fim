@@ -23,8 +23,8 @@ from .dashboard import agent_view, report_view
 from .db import conn, init_db
 from .models import ReportPayload, ReportResp, SetupReq, SetupResp
 
-RETENTION_N = 50
-DASHBOARD_N = 10
+RETENTION_N = 100
+DASHBOARD_N = 50
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
