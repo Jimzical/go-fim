@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}agents · go-fim{% endblock %}
 {% block content %}
-  <h2>Agents <span class="muted">({{ agents|length }})</span></h2>
+  <h2>
+    Agents <span class="muted">({{ agents|length }})</span>
+    <a href="/agents/new" class="btn">+ add agent</a>
+  </h2>
   {% include "partials/agents_table.html" %}
 {% endblock %}

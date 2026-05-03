@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}bootstrap · go-fim{% endblock %}
+{% block crumb %}<span class="crumb">/ <a href="/agents/new">add agent</a> / bootstrap</span>{% endblock %}
+{% block content %}
+<style>
+  .bootstrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre;
+    overflow-x: auto;
+    margin: 0;
+  }
+  .copy {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .copy:hover { filter: brightness(1.1); }
+</style>
+
+<h2>Bootstrap script for <span class="mono">{{ agent_name }}</span></h2>
+<p class="muted">Run this on the target box. Token expires in 1 hour.</p>
+
+<button class="copy" onclick="navigator.clipboard.writeText(document.getElementById('bootstrap').textContent)">copy</button>
+<pre id="bootstrap" class="bootstrap">mkdir -p /etc/gofim /var/lib/gofim/history
+cat > /etc/gofim/gofim.yml <<'EOF'
+agent_name: {{ agent_name }}
+path: {{ scan_path }}
+{%- if excludes %}
+exclude:
+{%- for e in excludes %}
+  - '{{ e }}'
+{%- endfor %}
+{%- endif %}
+verbose: false
+db: /var/lib/gofim/snapshot.db
+history_dir: /var/lib/gofim/history
+server_url: {{ server_url }}
+EOF
+
+go-fim -c /etc/gofim/gofim.yml --setup {{ token }}
+
+# Then schedule the scan loop, e.g. with cron:
+#   */5 * * * *  go-fim -c /etc/gofim/gofim.yml</pre>
+
+<p class="muted" style="margin-top:16px;">
+  Re-running the <code>--setup</code> line is a no-op once the agent is registered, so it's safe to paste twice.
+  After setup succeeds, the agent will appear on the <a href="/">dashboard</a>.
+</p>
+{% endblock %}
