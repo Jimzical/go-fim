@@ -47,7 +47,7 @@ services:
 
   agent-charlie:
     image: go-fim-agent
-    depends_on: [agent-alpha]
+    depends_on: [agent-alpha, caddy]
     volumes:
       - ${HOME}/Developer/Personal:${HOME}/Developer/Personal:ro
       - charlie-data:/data
