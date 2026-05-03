@@ -1,0 +1,4 @@
+caddy, localhost {
+	tls internal
+	reverse_proxy server:8000
+}
