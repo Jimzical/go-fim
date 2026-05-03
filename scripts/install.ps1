@@ -41,10 +41,11 @@ Write-Host "Downloading go-fim v$Version for windows_$arch..." -ForegroundColor 
 # Download and extract
 $url = "https://github.com/$Repo/releases/download/v$Version/go-fim_${Version}_windows_${arch}.zip"
 $zip = "$env:TEMP\go-fim-$([guid]::NewGuid()).zip"
+$extractDir = "$env:TEMP\go-fim-extract-$([guid]::NewGuid())"
 
 Invoke-WebRequest $url -OutFile $zip -UseBasicParsing
-Expand-Archive $zip -DestinationPath $env:TEMP\go-fim-extract -Force
-Move-Item "$env:TEMP\go-fim-extract\go-fim.exe" ".\go-fim.exe" -Force
-Remove-Item $zip, "$env:TEMP\go-fim-extract" -Recurse -Force -EA SilentlyContinue
+Expand-Archive $zip -DestinationPath $extractDir -Force
+Move-Item "$extractDir\go-fim.exe" ".\go-fim.exe" -Force
+Remove-Item $zip, $extractDir -Recurse -Force -EA SilentlyContinue
 
 Write-Host "Done! Downloaded: .\go-fim.exe" -ForegroundColor Green
