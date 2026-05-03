@@ -25,11 +25,8 @@ builds:
 
 archives:
   - id: default
-    format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    format_overrides:
-      - goos: windows
-        format: zip
+    rlcp: true
     files:
       - README.md
       - LICENSE*
