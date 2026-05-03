@@ -1,6 +1,7 @@
 agent_name: agent-charlie
 agent_id: 33333333-3333-3333-3333-333333333333
 path: /Users/arishkumar/Developer/Personal
+db_path: /data/snapshot.db
 
 exclude:
   - '^\.git$'

@@ -1,6 +1,7 @@
 agent_name: agent-alpha
 agent_id: 11111111-1111-1111-1111-111111111111
 path: /Users/arishkumar/Developer/Learning/file-checker
+db_path: /data/snapshot.db
 
 exclude:
   - '^\.git$'

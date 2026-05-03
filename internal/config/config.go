@@ -26,6 +26,7 @@ type Config struct {
 type rawConfig struct {
 	Path               string   `yaml:"path"`
 	Exclude            []string `yaml:"exclude"`
+	DBPath             string   `yaml:"db_path"`
 	ServerURL          string   `yaml:"server_url"`
 	AgentName          string   `yaml:"agent_name"`
 	AgentID            string   `yaml:"agent_id"`
@@ -68,6 +69,14 @@ func Load(path string) (*Config, error) {
 	}
 
 	cfg := configFromRoot(resolvedRoot)
+	if raw.DBPath != "" {
+		resolved, err := resolvePath(raw.DBPath)
+		if err != nil {
+			return nil, fmt.Errorf("config %q: db_path %q: %w", path, raw.DBPath, err)
+		}
+		cfg.DBPath = resolved
+		cfg.HistoryDir = filepath.Join(filepath.Dir(resolved), "history")
+	}
 	cfg.ServerURL = raw.ServerURL
 	cfg.AgentName = raw.AgentName
 	cfg.AgentID = raw.AgentID

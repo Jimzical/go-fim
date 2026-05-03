@@ -1,6 +1,7 @@
 agent_name: agent-bravo
 agent_id: 22222222-2222-2222-2222-222222222222
 path: /Users/arishkumar/Developer/Learning
+db_path: /data/snapshot.db
 
 exclude:
   - '^\.git$'
