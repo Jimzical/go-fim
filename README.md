@@ -47,8 +47,10 @@ EOF
 
 ```bash
 cd server
-pipenv install
-pipenv run uvicorn server.app:app --reload --port 8000
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload --port 8000
 ```
 
 Dashboard at `http://localhost:8000/`.
@@ -195,7 +197,10 @@ go mod tidy
 
 # Server
 cd server
-pipenv run uvicorn server.app:app --reload --port 8000
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload --port 8000
 ```
 
 CI runs `golangci-lint`, `gofmt -l .`, `go mod tidy` drift check, `go vet`, and `go build`.
