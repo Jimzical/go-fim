@@ -1,0 +1,26 @@
+# go-fim configuration
+# `path` is required; the rest are optional.
+# Excludes are regexes matched against directory basenames; matches prune the subtree.
+
+agent_name: local-dev
+path: ./
+# Set `path` to another directory if you want to scan outside the current checkout.
+
+exclude:
+  - '^\.git$'
+  - '^node_modules$'
+  - '^\.venv$'
+  - '^__pycache__$'
+  - '^\.mypy_cache$'
+  - '^\.build$'
+
+verbose: false
+
+# bbolt snapshot file. ~ is expanded; relative paths resolve from cwd.
+db: ./snapshot.db
+
+# Where to write rolling JSON report files (last 10 kept). Same path rules as `db`.
+history_dir: ./history
+
+# Control-plane URL. Empty/absent = standalone mode (no register, no POST).
+server_url: http://localhost:8000

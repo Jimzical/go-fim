@@ -1,0 +1,42 @@
+<div id="agent-reports"
+     hx-get="/partial/agent/{{ agent.id }}/reports"
+     hx-trigger="every 10s"
+     hx-swap="outerHTML">
+  {% if not reports %}
+    <p class="empty">No reports yet.</p>
+  {% else %}
+    {% for r in reports %}
+    <div class="card">
+      <div class="card-head">
+        <span class="ts" title="{{ r.ts }}">{{ r.ts_rel }}</span>
+        <span class="muted">{{ r.total_files }} files scanned</span>
+      </div>
+      <div style="margin-top: 6px;">
+        {% if r.num_created or r.num_modified or r.num_deleted %}
+          {% if r.num_created %}<span class="pill pill-c">+{{ r.num_created }} created</span>{% endif %}
+          {% if r.num_modified %}<span class="pill pill-m">~{{ r.num_modified }} modified</span>{% endif %}
+          {% if r.num_deleted %}<span class="pill pill-d">-{{ r.num_deleted }} deleted</span>{% endif %}
+        {% else %}
+          <span class="muted">no changes</span>
+        {% endif %}
+      </div>
+      {% if r.changes %}
+      <details>
+        <summary>{{ r.changes|length }}{% if r.changes_truncated %} of {{ r.changes|length + r.changes_truncated }}{% endif %} change{{ '' if r.changes|length == 1 else 's' }}</summary>
+        <ul>
+          {% for c in r.changes %}
+          <li>
+            <span class="sym-{{ c.sym_class }}">{{ c.symbol }}</span>
+            {{ c.path }}
+          </li>
+          {% endfor %}
+          {% if r.changes_truncated %}
+          <li class="muted">…and {{ r.changes_truncated }} more</li>
+          {% endif %}
+        </ul>
+      </details>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% endif %}
+</div>

@@ -1,0 +1,40 @@
+<div id="agents-table"
+     hx-get="/partial/agents"
+     hx-trigger="every 10s"
+     hx-swap="outerHTML">
+  {% if not agents %}
+    <p class="empty">No agents have reported yet.</p>
+  {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Scan path</th>
+          <th>Last report</th>
+          <th>First seen</th>
+          <th>Agent ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in agents %}
+        <tr>
+          <td>
+            <span class="dot dot-{{ a.freshness }}"></span>
+            <a href="/agents/{{ a.id }}">{{ a.name }}</a>
+          </td>
+          <td class="mono muted">{{ a.scan_path or "—" }}</td>
+          <td>
+            {% if a.last_report_at %}
+              <span title="{{ a.last_report_at }}">{{ a.last_report_rel }}</span>
+            {% else %}
+              <span class="muted">never</span>
+            {% endif %}
+          </td>
+          <td class="muted">{{ a.first_seen_rel }}</td>
+          <td class="mono muted">{{ a.id[:8] }}…</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
