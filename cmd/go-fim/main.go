@@ -19,7 +19,7 @@ import (
 func main() {
 	cfgPath := flag.String("c", "gofim.yml", "path to config file")
 	verbose := flag.Bool("v", false, "force verbose (overrides config)")
-	local := flag.Bool("local", false, "run without a config file, scanning cwd with local defaults (no server)")
+	local := flag.Bool("local", false, "scan cwd with local defaults when the config file is missing (no server)")
 	setupToken := flag.String("setup", "", "register this agent using the given JWT, then exit")
 	flag.Parse()
 
