@@ -33,7 +33,7 @@ URL="https://github.com/${REPO}/releases/download/v${VERSION}/go-fim_${VERSION}_
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-curl -sSL -o "$TMP/go-fim.tar.gz" "$URL" || { echo "Download failed"; exit 1; }
+curl -fsSL -o "$TMP/go-fim.tar.gz" "$URL" || { echo "Download failed"; exit 1; }
 tar -xzf "$TMP/go-fim.tar.gz" -C "$TMP"
 mv "$TMP/go-fim" ./go-fim
 chmod +x ./go-fim
