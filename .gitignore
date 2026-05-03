@@ -1,3 +1,5 @@
 /go-fim
 *.db
 /history/
+**/__pycache__/**
+**/*.pyc
