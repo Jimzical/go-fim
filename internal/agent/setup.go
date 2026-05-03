@@ -20,7 +20,7 @@ type SetupOpts struct {
 // the JWT to register this agent's bbolt UUID with the server.
 func Setup(opts SetupOpts) (err error) {
 	if opts.Token == "" {
-		return errors.New("setup: --token is required")
+		return errors.New("setup: --setup is required")
 	}
 
 	cfg, err := config.Load(opts.ConfigPath)
