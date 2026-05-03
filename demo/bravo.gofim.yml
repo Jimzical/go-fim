@@ -1,4 +1,5 @@
 agent_name: agent-bravo
+agent_id: 22222222-2222-2222-2222-222222222222
 path: /Users/arishkumar/Developer/Learning
 
 exclude:
@@ -9,8 +10,5 @@ exclude:
   - '^\.mypy_cache$'
   - '^\.build$'
 
-verbose: false
-db: /data/snapshot.db
-history_dir: /data/history
 server_url: https://caddy
 insecure_skip_verify: true
