@@ -24,3 +24,7 @@ history_dir: ./history
 
 # Control-plane URL. Empty/absent = standalone mode (no register, no POST).
 server_url: http://localhost:8000
+
+# Skip TLS certificate verification for server_url (useful with internal CAs).
+# WARNING: Only use in development/testing environments with self-signed certs.
+insecure_skip_verify: false

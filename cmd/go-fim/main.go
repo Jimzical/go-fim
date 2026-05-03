@@ -59,7 +59,7 @@ func run() (err error) {
 
 	var httpClient *client.Client
 	if cfg.ServerURL != "" {
-		httpClient = client.New(cfg.ServerURL)
+		httpClient = client.New(cfg.ServerURL, cfg.InsecureSkipVerify)
 	}
 
 	// Drain any reports queued by previous runs before kicking off the fresh

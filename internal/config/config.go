@@ -12,26 +12,28 @@ import (
 
 // Config is the runtime config after parsing + regex compilation.
 type Config struct {
-	Path       string
-	Exclude    []*regexp.Regexp
-	Verbose    bool
-	DBPath     string
-	HistoryDir string
-	ServerURL  string // empty = standalone mode (no POST)
-	AgentName  string // operator-chosen display label, sent on every /report
+	Path               string
+	Exclude            []*regexp.Regexp
+	Verbose            bool
+	DBPath             string
+	HistoryDir         string
+	ServerURL          string // empty = standalone mode (no POST)
+	AgentName          string // operator-chosen display label, sent on every /report
+	InsecureSkipVerify bool   // disable TLS certificate verification entirely
 }
 
 // rawConfig matches the on-disk YAML shape; we translate it into Config
 // (compiling regexes, resolving paths) so the rest of the program sees
 // ready-to-use types.
 type rawConfig struct {
-	Path      string   `yaml:"path"`
-	Exclude   []string `yaml:"exclude"`
-	Verbose   bool     `yaml:"verbose"`
-	DB        string   `yaml:"db"`
-	History   string   `yaml:"history_dir"`
-	ServerURL string   `yaml:"server_url"`
-	AgentName string   `yaml:"agent_name"`
+	Path               string   `yaml:"path"`
+	Exclude            []string `yaml:"exclude"`
+	Verbose            bool     `yaml:"verbose"`
+	DB                 string   `yaml:"db"`
+	History            string   `yaml:"history_dir"`
+	ServerURL          string   `yaml:"server_url"`
+	AgentName          string   `yaml:"agent_name"`
+	InsecureSkipVerify bool     `yaml:"insecure_skip_verify"`
 }
 
 const (
@@ -80,12 +82,13 @@ func Load(path string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		Path:       resolvedRoot,
-		Verbose:    raw.Verbose,
-		DBPath:     resolvedDB,
-		HistoryDir: resolvedHistory,
-		ServerURL:  raw.ServerURL,
-		AgentName:  raw.AgentName,
+		Path:               resolvedRoot,
+		Verbose:            raw.Verbose,
+		DBPath:             resolvedDB,
+		HistoryDir:         resolvedHistory,
+		ServerURL:          raw.ServerURL,
+		AgentName:          raw.AgentName,
+		InsecureSkipVerify: raw.InsecureSkipVerify,
 	}
 	for i, pat := range raw.Exclude {
 		re, err := regexp.Compile(pat)

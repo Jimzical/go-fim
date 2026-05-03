@@ -12,4 +12,5 @@ exclude:
 verbose: false
 db: /data/snapshot.db
 history_dir: /data/history
-server_url: http://server:8000
+server_url: https://caddy
+insecure_skip_verify: true
