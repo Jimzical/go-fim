@@ -2,8 +2,8 @@ name: CI
 
 on:
   push:
-    paths:
     branches: ["main"]
+    paths:
       - "**.go"
       - "go.mod"
       - "go.sum"
