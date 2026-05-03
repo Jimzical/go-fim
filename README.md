@@ -97,27 +97,29 @@ go install github.com/Jimzical/go-fim/cmd/go-fim@latest
 
 ### From GitHub Releases
 
-Download the latest binary for your platform:
+Download a release binary for your platform (replace `VERSION` with the release tag without the leading `v`, for example `1.0.0`):
 
 ```bash
+VERSION=1.0.0
+
 # Linux (amd64)
-curl -Lo go-fim https://github.com/Jimzical/go-fim/releases/latest/download/go-fim_linux_amd64.tar.gz
-tar -xzf go-fim_linux_amd64.tar.gz
+curl -Lo go-fim_${VERSION}_linux_amd64.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_linux_amd64.tar.gz
+tar -xzf go-fim_${VERSION}_linux_amd64.tar.gz
 chmod +x go-fim
 
 # Linux (arm64)
-curl -Lo go-fim https://github.com/Jimzical/go-fim/releases/latest/download/go-fim_linux_arm64.tar.gz
-tar -xzf go-fim_linux_arm64.tar.gz
+curl -Lo go-fim_${VERSION}_linux_arm64.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_linux_arm64.tar.gz
+tar -xzf go-fim_${VERSION}_linux_arm64.tar.gz
 chmod +x go-fim
 
 # macOS (Apple Silicon)
-curl -Lo go-fim https://github.com/Jimzical/go-fim/releases/latest/download/go-fim_darwin_arm64.tar.gz
-tar -xzf go-fim_darwin_arm64.tar.gz
+curl -Lo go-fim_${VERSION}_darwin_arm64.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_darwin_arm64.tar.gz
+tar -xzf go-fim_${VERSION}_darwin_arm64.tar.gz
 chmod +x go-fim
 
 # macOS (Intel)
-curl -Lo go-fim https://github.com/Jimzical/go-fim/releases/latest/download/go-fim_darwin_amd64.tar.gz
-tar -xzf go-fim_darwin_amd64.tar.gz
+curl -Lo go-fim_${VERSION}_darwin_amd64.tar.gz https://github.com/Jimzical/go-fim/releases/download/v${VERSION}/go-fim_${VERSION}_darwin_amd64.tar.gz
+tar -xzf go-fim_${VERSION}_darwin_amd64.tar.gz
 chmod +x go-fim
 ```
 
