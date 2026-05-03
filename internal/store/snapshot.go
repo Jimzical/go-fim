@@ -9,7 +9,7 @@ import (
 
 	"go.etcd.io/bbolt"
 
-	"go-fim/internal/walker"
+	"github.com/Jimzical/go-fim/internal/walker"
 )
 
 const batchSize = 5000

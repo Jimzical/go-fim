@@ -14,7 +14,7 @@ import (
 	"net/url"
 	"time"
 
-	"go-fim/internal/report"
+	"github.com/Jimzical/go-fim/internal/report"
 )
 
 // ErrUnreachable wraps any failure where retrying later might succeed:

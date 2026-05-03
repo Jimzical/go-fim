@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"go-fim/internal/walker"
+	"github.com/Jimzical/go-fim/internal/walker"
 )
 
 // numWorkers is hardcoded for now. Hashing is CPU+disk bound, and ~8 is the
