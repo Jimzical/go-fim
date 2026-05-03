@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 
 	"go.etcd.io/bbolt"
@@ -46,6 +47,14 @@ func Run(cfgPath string, verboseFlag bool, local bool) (err error) {
 	}
 
 	log := logger.New(verboseFlag)
+
+	// Create parent directories for DBPath and HistoryDir if they don't exist
+	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0755); err != nil {
+		return fmt.Errorf("create db directory: %w", err)
+	}
+	if err := os.MkdirAll(cfg.HistoryDir, 0755); err != nil {
+		return fmt.Errorf("create history directory: %w", err)
+	}
 
 	db, err := store.Open(cfg.DBPath)
 	if err != nil {
