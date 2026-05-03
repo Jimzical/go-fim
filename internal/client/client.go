@@ -53,7 +53,7 @@ func New(baseURL string, insecureSkipVerify bool) *Client {
 }
 
 // SendReport POSTs the report. Caller fills rep.AgentID / rep.AgentName /
-// rep.ScanPath before calling — the server keys on AgentID and refreshes
+// rep.ScanPath before calling - the server keys on AgentID and refreshes
 // the operator-supplied display fields on every report.
 func (c *Client) SendReport(rep report.Report) error {
 	return c.post("/report", rep, nil)
