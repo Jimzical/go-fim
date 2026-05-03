@@ -5,6 +5,7 @@ fields refreshed on every /report. /report is gated by registered_agents:
 agents must complete /api/setup (or be pre-seeded as a demo) first.
 """
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -28,6 +29,8 @@ DASHBOARD_N = 10
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 bearer = HTTPBearer(auto_error=False)
+
+logger = logging.getLogger(__name__)
 
 # In-memory mirror of `SELECT id FROM agents`.
 registered_agents: set[str] = set()
@@ -126,7 +129,8 @@ async def api_setup(
     try:
         claims = auth.verify_setup_token(creds.credentials)
     except jwt.InvalidTokenError as e:
-        raise HTTPException(status_code=401, detail=f"invalid token: {e}")
+        logger.warning("setup token validation failed: %s", e)
+        raise HTTPException(status_code=401, detail="invalid or expired token")
 
     agent_id = str(req.agent_id)
     now = datetime.now(timezone.utc).isoformat()
