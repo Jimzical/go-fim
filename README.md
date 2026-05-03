@@ -1,5 +1,9 @@
 # go-fim
 
+[![CI](https://github.com/Jimzical/go-fim/actions/workflows/ci.yml/badge.svg)](https://github.com/Jimzical/go-fim/actions/workflows/ci.yml)
+[![Release](https://github.com/Jimzical/go-fim/actions/workflows/release.yml/badge.svg)](https://github.com/Jimzical/go-fim/actions/workflows/release.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Jimzical/go-fim)](https://goreportcard.com/report/github.com/Jimzical/go-fim)
+
 A file integrity monitor (FIM): Go agents walk a filesystem, hash files, diff against the last snapshot, and POST change reports to a Python FastAPI control plane. The server stores per-agent history in SQLite and serves a live Jinja+HTMX dashboard.
 
 ## What it does
@@ -83,11 +87,60 @@ Each agent scans a host directory mounted read-only, writes its bbolt snapshot a
 
 Dashboard at `http://localhost:8000/`. The stack appears as **go-fim-demo** in Docker Desktop.
 
+## Installation
+
+### From Source
+
+```bash
+go install github.com/Jimzical/go-fim/cmd/go-fim@latest
+```
+
+### From GitHub Releases
+
+Download the latest binary for your platform:
+
+```bash
+# Linux (amd64)
+curl -Lo go-fim https://github.com/Jimzical/go-fim/releases/latest/download/go-fim_linux_amd64.tar.gz
+tar -xzf go-fim_linux_amd64.tar.gz
+chmod +x go-fim
+
+# Linux (arm64)
+curl -Lo go-fim https://github.com/Jimzical/go-fim/releases/latest/download/go-fim_linux_arm64.tar.gz
+tar -xzf go-fim_linux_arm64.tar.gz
+chmod +x go-fim
+
+# macOS (Apple Silicon)
+curl -Lo go-fim https://github.com/Jimzical/go-fim/releases/latest/download/go-fim_darwin_arm64.tar.gz
+tar -xzf go-fim_darwin_arm64.tar.gz
+chmod +x go-fim
+
+# macOS (Intel)
+curl -Lo go-fim https://github.com/Jimzical/go-fim/releases/latest/download/go-fim_darwin_amd64.tar.gz
+tar -xzf go-fim_darwin_amd64.tar.gz
+chmod +x go-fim
+```
+
+For Windows, download the `.zip` file from the [releases page](https://github.com/Jimzical/go-fim/releases).
+
+## Releasing
+
+This project uses [GoReleaser](https://goreleaser.com/) for automated releases. To create a new release:
+
+```bash
+# Create and push a version tag
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This triggers the release workflow which:
+1. Builds binaries for Linux, macOS, and Windows (amd64 + arm64)
+2. Creates a GitHub Release with auto-generated changelog
+3. Uploads all binaries as release assets
 
 # Future work
 
-- [ ] Test TLS via Caddy in front of the server
-- [ ] Setup Github Actions for basic tests and release builds (possibly just a simple lint + test action for now)
+- [x] Setup Github Actions for basic tests and release builds (possibly just a simple lint + test action for now)
 - [ ] Maybe Graceful shutdown for agents?
 - [ ] Break down the main.go with a runner and setup command for automated config generation and db init?
 - [ ] JWT and agent adding button on the dashboard for auth and onboarding, maybe with a simple shared secret for now
