@@ -84,3 +84,12 @@ Each agent scans a host directory mounted read-only, writes its bbolt snapshot a
 Dashboard at `http://localhost:8000/`. The stack appears as **go-fim-demo** in Docker Desktop.
 
 
+# Future work
+
+- [ ] Test TLS via Caddy in front of the server
+- [ ] Setup Github Actions for basic tests and release builds (possibly just a simple lint + test action for now)
+- [ ] Maybe Graceful shutdown for agents?
+- [ ] Break down the main.go with a runner and setup command for automated config generation and db init?
+- [ ] JWT and agent adding button on the dashboard for auth and onboarding, maybe with a simple shared secret for now
+- [ ] Possible sqlite backup strategy for server.db?
+
