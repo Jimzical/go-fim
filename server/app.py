@@ -21,10 +21,10 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-import queries
-from dashboard import agent_view, report_view
-from db import conn, init_db
-from models import ReportPayload, ReportResp
+from . import queries
+from .dashboard import agent_view, report_view
+from .db import conn, init_db
+from .models import ReportPayload, ReportResp
 
 RETENTION_N = 50
 DASHBOARD_N = 10
