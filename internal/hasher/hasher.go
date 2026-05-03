@@ -10,8 +10,8 @@ import (
 	"github.com/Jimzical/go-fim/internal/walker"
 )
 
-// numWorkers is hardcoded for now. Hashing is CPU+disk bound, and ~8 is the
-// usual saturation point on modern hardware.
+// numWorkers is the hash pool size. Hashing is CPU+disk-bound; ~8 is the
+// typical saturation point on modern hardware.
 const numWorkers = 8
 
 // Run fans FileMeta from metaIn across numWorkers goroutines, fills in Hash
@@ -33,8 +33,6 @@ func Run(ctx context.Context, logger *slog.Logger, metaIn <-chan walker.FileMeta
 	return nil
 }
 
-// worker pulls FileMeta from metaIn until metaIn is closed or ctx is
-// cancelled. Each entry gets its Hash populated and is forwarded on hashedOut.
 func worker(ctx context.Context, logger *slog.Logger, id int, metaIn <-chan walker.FileMeta, hashedOut chan<- walker.FileMeta) {
 	for {
 		select {
