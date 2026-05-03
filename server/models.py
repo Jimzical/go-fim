@@ -1,11 +1,12 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 
 class ChangeEntry(BaseModel):
-    kind: str = Field(max_length=10)  # "created", "modified", "deleted"
+    kind: Literal["created", "modified", "deleted"]
     path: str = Field(max_length=4096)  # Reasonable max path length
 
 
