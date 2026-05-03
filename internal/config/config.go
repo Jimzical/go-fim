@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"golang.org/x/tools/go/cfg"
 	"gopkg.in/yaml.v3"
 )
 
@@ -19,8 +18,8 @@ type Config struct {
 	HistoryDir         string
 	ServerURL          string // empty = standalone mode (no POST)
 	AgentName          string // operator-chosen display label, sent on every /report
-	AgentID			   string
-	InsecureSkipVerify bool   // disable TLS certificate verification entirely
+	AgentID            string
+	InsecureSkipVerify bool // disable TLS certificate verification entirely
 }
 
 // rawConfig is the on-disk YAML format; Load translates it into Config
@@ -29,7 +28,7 @@ type rawConfig struct {
 	Exclude            []string `yaml:"exclude"`
 	ServerURL          string   `yaml:"server_url"`
 	AgentName          string   `yaml:"agent_name"`
-	AgentID  		   string   `yaml:"agent_id"`
+	AgentID            string   `yaml:"agent_id"`
 	InsecureSkipVerify bool     `yaml:"insecure_skip_verify"`
 }
 
@@ -44,12 +43,11 @@ func Default() (*Config, error) {
 func configFromRoot(root string) *Config {
 	gofim := filepath.Join(root, ".gofim")
 	return &Config{
-		Path: root,
-		DBPath: filepath.Join(gofim, "snapshot.db"),
+		Path:       root,
+		DBPath:     filepath.Join(gofim, "snapshot.db"),
 		HistoryDir: filepath.Join(gofim, "history"),
 	}
 }
-
 
 // Load reads, parses, and validates the YAML config at path.
 func Load(path string) (*Config, error) {
@@ -75,7 +73,6 @@ func Load(path string) (*Config, error) {
 	cfg.AgentID = raw.AgentID
 	cfg.InsecureSkipVerify = raw.InsecureSkipVerify
 
-	
 	for i, pat := range raw.Exclude {
 		re, err := regexp.Compile(pat)
 		if err != nil {
