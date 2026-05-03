@@ -24,3 +24,14 @@ class ReportPayload(BaseModel):
 
 class ReportResp(BaseModel):
     pass
+
+
+class SetupReq(BaseModel):
+    agent_id: UUID
+
+
+class SetupResp(BaseModel):
+    agent_id: str
+    agent_name: str
+    scan_path: str
+    api_token: str
