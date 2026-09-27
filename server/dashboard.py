@@ -19,12 +19,19 @@ KIND_SYMBOLS = {
 def parse_ts(s: str | None) -> datetime | None:
     if not s:
         return None
-    return datetime.fromisoformat(s)
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def relative(dt: datetime | None) -> str:
     if dt is None:
         return "never"
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
     secs = int((datetime.now(timezone.utc) - dt).total_seconds())
     if secs < 0:
         return "just now"
@@ -40,6 +47,10 @@ def relative(dt: datetime | None) -> str:
 def freshness(dt: datetime | None) -> str:
     if dt is None:
         return "grey"
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
     secs = (datetime.now(timezone.utc) - dt).total_seconds()
     if secs < 3600:
         return "green"
