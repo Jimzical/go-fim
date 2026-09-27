@@ -13,7 +13,7 @@ A file integrity monitor (FIM): Go agents walk a filesystem, hash files, diff ag
 - Reports written locally to `<path>/.gofim/history/` (rolling, last 10 kept); POSTed to the server with Bearer auth if `server_url` is set
 - On POST failure the report is queued as `.unsent`; the next run replays pending files oldest-first before sending the fresh one
 - Agents must register via `--setup` before the server accepts their reports; registration issues a long-lived API token stored in bbolt
-- Server stores up to 50 reports per agent and renders a dashboard that auto-refreshes every 10s via HTMX
+- Server stores up to 100 reports per agent in SQLite and renders 50 on the dashboard, auto-refreshing every 10s via HTMX
 
 > **Note:** Hash is currently a placeholder (`sha256(size:mtime)`) — no file reads. Swapping to real content hashing is a one-function change in `internal/hasher/hasher.go`.
 
@@ -79,6 +79,7 @@ This calls `POST /api/setup`, creates the agent row in SQLite, and stores a long
 path: ~/projects/myapp     # required — directory to scan
 agent_name: prod-web-01    # required when server_url is set — display label
 
+db_path: ~/.gofim/snapshot.db       # optional — path to bbolt database
 server_url: https://fim.example.com   # omit for standalone mode (no POST)
 exclude:                              # regexes matched against directory basename
   - '^\.git$'
@@ -90,7 +91,7 @@ insecure_skip_verify: false   # disable TLS verification (dev / self-signed cert
 # agent_id: <uuid>            # optional — pin a stable UUID instead of using the bbolt one
 ```
 
-`path` supports `~` expansion and is resolved to an absolute path at load time. The bbolt snapshot and report history are always stored under `<path>/.gofim/` — not configurable. `exclude` patterns are Go regexes matched against directory **basenames**, not full paths — matching a directory skips it entirely.
+`path` supports `~` expansion and is resolved to an absolute path at load time. By default, the bbolt snapshot and report history are stored under `<path>/.gofim/`. `db_path` allows configuring a custom path for the bbolt database (and its adjacent `history/` directory); like `path`, `db_path` supports `~` expansion and is resolved to an absolute path at load time. `exclude` patterns are Go regexes matched against directory **basenames**, not full paths — matching a directory skips it entirely.
 
 ## CLI reference
 
