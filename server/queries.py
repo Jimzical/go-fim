@@ -2,7 +2,6 @@
 first argument so they can be tested against an in-memory DB without touching
 the global conn from db.py."""
 
-import secrets
 from sqlite3 import Connection, Row
 
 
@@ -45,18 +44,18 @@ def register_agent(
     name: str,
     scan_path: str,
     now: str,
+    api_token: str | None = None,
 ) -> str | None:
-    """Insert the agent row and generate an API token. Returns the token if
+    """Insert the agent row and store the API token. Returns the token if
     a new row was created, None if the agent_id was already registered."""
-    token = secrets.token_urlsafe(32)
     cur = conn.execute(
         """
         INSERT OR IGNORE INTO agents (id, name, scan_path, first_seen, last_report_at, api_token)
         VALUES (?, ?, ?, ?, NULL, ?)
         """,
-        (agent_id, name, scan_path, now, token),
+        (agent_id, name, scan_path, now, api_token),
     )
-    return token if cur.rowcount > 0 else None
+    return api_token if cur.rowcount > 0 else None
 
 
 def save_report(
