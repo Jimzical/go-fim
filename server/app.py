@@ -20,11 +20,12 @@ from fastapi.templating import Jinja2Templates
 
 from . import auth, queries
 from .dashboard import agent_view, report_view
-from .db import conn, init_db
+from .db import DEMO_AGENTS, conn, init_db
 from .models import ReportPayload, ReportResp, SetupReq, SetupResp
 
 RETENTION_N = 100
 DASHBOARD_N = 50
+DEMO_AGENT_IDS = {uid for uid, _, _ in DEMO_AGENTS}
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
@@ -54,13 +55,26 @@ async def receive_report(
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
 ) -> ReportResp:
     agent_id = str(rep.agent_id)
+
+    if creds is not None and creds.scheme.lower() == "bearer":
+        try:
+            claims = auth.verify_agent_token(creds.credentials)
+        except jwt.InvalidTokenError as e:
+            logger.warning("agent token validation failed: %s", e)
+            raise HTTPException(status_code=401, detail="invalid or missing API token")
+
+        if claims.get("sub") != agent_id:
+            raise HTTPException(
+                status_code=401, detail="invalid or missing API token"
+            )
+    else:
+        if os.environ.get("GOFIM_DEMO_MODE") == "1" and agent_id in DEMO_AGENT_IDS:
+            pass
+        else:
+            raise HTTPException(status_code=401, detail="invalid or missing API token")
+
     if agent_id not in registered_agents:
         raise HTTPException(status_code=403, detail="agent not registered — run go-fim setup first")
-
-    row = queries.find_agent_by_id(conn, agent_id)
-    if row["api_token"] is not None:
-        if creds is None or creds.credentials != row["api_token"]:
-            raise HTTPException(status_code=401, detail="invalid or missing API token")
 
     now = datetime.now(timezone.utc).isoformat()
     with conn:
@@ -134,10 +148,11 @@ async def api_setup(
 
     agent_id = str(req.agent_id)
     now = datetime.now(timezone.utc).isoformat()
+    agent_token = auth.mint_agent_token(agent_id)
 
     with conn:
         api_token = queries.register_agent(
-            conn, agent_id, claims["agent_name"], claims["scan_path"], now
+            conn, agent_id, claims["agent_name"], claims["scan_path"], now, agent_token
         )
         if api_token:
             registered_agents.add(agent_id)

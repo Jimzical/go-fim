@@ -1,4 +1,4 @@
-"""JWT minting / verification for the agent-setup handshake.
+"""JWT minting / verification for agent-setup handshakes and agent authentication.
 
 The signing secret is shared across server restarts: persisted to a file under
 the same directory as the SQLite db so the existing server-data volume keeps
@@ -64,3 +64,25 @@ def verify_setup_token(token: str) -> dict:
         issuer=ISSUER,
         options={"require": ["exp", "iat", "agent_name", "scan_path"]},
     )
+
+
+def mint_agent_token(agent_id: str) -> str:
+    now = int(time.time())
+    claims = {
+        "iss": ISSUER,
+        "sub": agent_id,
+        "iat": now,
+    }
+    return jwt.encode(claims, load_or_init_secret(), algorithm="HS256")
+
+
+def verify_agent_token(token: str) -> dict:
+    """Returns the validated claims. Raises jwt.InvalidTokenError on failure."""
+    return jwt.decode(
+        token,
+        load_or_init_secret(),
+        algorithms=["HS256"],
+        issuer=ISSUER,
+        options={"require": ["sub", "iat"]},
+    )
+
