@@ -1,6 +1,6 @@
 agent_name: agent-charlie
 agent_id: 33333333-3333-3333-3333-333333333333
-path: /Users/arishkumar/Developer/Personal
+path: /Users/arishkumar/Personal/Coding
 db_path: /data/snapshot.db
 
 exclude:

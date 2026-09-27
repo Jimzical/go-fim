@@ -1,6 +1,6 @@
 agent_name: agent-bravo
 agent_id: 22222222-2222-2222-2222-222222222222
-path: /Users/arishkumar/Developer/Learning
+path: /Users/arishkumar/Personal/Coding/crowdgate
 db_path: /data/snapshot.db
 
 exclude:

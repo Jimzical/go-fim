@@ -34,7 +34,7 @@ services:
     # report entries reference the real host paths, not /scan/...  Trade-off:
     # hardcodes /Users/arishkumar/... into compose; fine for single-user demo.
     volumes:
-      - ${HOME}/Developer/Learning/file-checker:${HOME}/Developer/Learning/file-checker:ro
+      - ${HOME}/Personal/Coding/Vizdisk:${HOME}/Personal/Coding/Vizdisk:ro
       - alpha-data:/data
       - ./alpha.gofim.yml:/etc/gofim/gofim.yml:ro
 
@@ -42,7 +42,7 @@ services:
     image: go-fim-agent
     depends_on: [agent-alpha, caddy]
     volumes:
-      - ${HOME}/Developer/Learning:${HOME}/Developer/Learning:ro
+      - ${HOME}/Personal/Coding/crowdgate:${HOME}/Personal/Coding/crowdgate:ro
       - bravo-data:/data
       - ./bravo.gofim.yml:/etc/gofim/gofim.yml:ro
 
@@ -50,7 +50,7 @@ services:
     image: go-fim-agent
     depends_on: [agent-alpha, caddy]
     volumes:
-      - ${HOME}/Developer/Personal:${HOME}/Developer/Personal:ro
+      - ${HOME}/Personal/Coding:${HOME}/Personal/Coding:ro
       - charlie-data:/data
       - ./charlie.gofim.yml:/etc/gofim/gofim.yml:ro
 
