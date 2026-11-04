@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -20,6 +22,7 @@ type Config struct {
 	AgentName          string // operator-chosen display label, sent on every /report
 	AgentID            string
 	InsecureSkipVerify bool // disable TLS certificate verification entirely
+	Jitter             time.Duration
 }
 
 // rawConfig is the on-disk YAML format; Load translates it into Config
@@ -31,6 +34,7 @@ type rawConfig struct {
 	AgentName          string   `yaml:"agent_name"`
 	AgentID            string   `yaml:"agent_id"`
 	InsecureSkipVerify bool     `yaml:"insecure_skip_verify"`
+	Jitter             string   `yaml:"jitter"`
 }
 
 func Default() (*Config, error) {
@@ -81,6 +85,16 @@ func Load(path string) (*Config, error) {
 	cfg.AgentName = raw.AgentName
 	cfg.AgentID = raw.AgentID
 	cfg.InsecureSkipVerify = raw.InsecureSkipVerify
+	if raw.Jitter != "" {
+		d, err := time.ParseDuration(raw.Jitter)
+		if err == nil {
+			cfg.Jitter = d
+		} else if sec, err := strconv.Atoi(raw.Jitter); err == nil && sec > 0 {
+			cfg.Jitter = time.Duration(sec) * time.Second
+		} else {
+			return nil, fmt.Errorf("config %q: invalid jitter %q", path, raw.Jitter)
+		}
+	}
 
 	for i, pat := range raw.Exclude {
 		re, err := regexp.Compile(pat)

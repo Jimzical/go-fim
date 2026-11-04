@@ -22,6 +22,7 @@ from . import auth, queries
 from .dashboard import agent_view, report_view
 from .db import conn, init_db
 from .models import ReportPayload, ReportResp, SetupReq, SetupResp
+from .ratelimit import TokenBucketMiddleware, TokenBucketRateLimiter
 
 RETENTION_N = 100
 DASHBOARD_N = 50
@@ -44,8 +45,12 @@ async def lifespan(app: FastAPI):
     yield
 
 
+rate_limiter = TokenBucketRateLimiter()
+
 app = FastAPI(lifespan=lifespan, title="go-fim control plane", docs_url=None, redoc_url=None)
+app.state.rate_limiter = rate_limiter
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(TokenBucketMiddleware, limiter=rate_limiter)
 
 
 @app.post("/report")
