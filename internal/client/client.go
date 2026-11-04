@@ -13,17 +13,68 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Jimzical/go-fim/internal/report"
 )
 
 // ErrUnreachable wraps any failure where retrying later might succeed:
-// network/DNS/timeout, plus 5xx from the server. 4xx returns *HTTPError
-// instead — those signal a protocol bug, not transient unavailability.
+// network/DNS/timeout, plus 5xx from the server.
 var ErrUnreachable = errors.New("server unreachable")
 
-// HTTPError is a non-2xx, non-5xx response (i.e. 4xx). Don't queue these.
+// ErrRateLimited indicates an HTTP 429 response from the server.
+var ErrRateLimited = errors.New("rate limited")
+
+// RateLimitError represents an HTTP 429 Too Many Requests response with
+// optional Retry-After guidance from the server.
+type RateLimitError struct {
+	StatusCode int
+	RetryAfter time.Duration
+	Body       string
+}
+
+func (e *RateLimitError) Error() string {
+	if e.RetryAfter > 0 {
+		return fmt.Sprintf("server 429: rate limited (retry after %v): %s", e.RetryAfter, e.Body)
+	}
+	return fmt.Sprintf("server 429: rate limited: %s", e.Body)
+}
+
+func (e *RateLimitError) Unwrap() error {
+	return ErrRateLimited
+}
+
+func (e *RateLimitError) Is(target error) bool {
+	return target == ErrRateLimited
+}
+
+// ParseRetryAfter parses a standard HTTP Retry-After header (either integer
+// seconds or an HTTP-date timestamp) into a time.Duration. Returns 0 if
+// empty or unparseable.
+func ParseRetryAfter(header string) time.Duration {
+	header = strings.TrimSpace(header)
+	if header == "" {
+		return 0
+	}
+	if sec, err := strconv.Atoi(header); err == nil {
+		if sec > 0 {
+			return time.Duration(sec) * time.Second
+		}
+		return 0
+	}
+	if t, err := http.ParseTime(header); err == nil {
+		d := time.Until(t)
+		if d > 0 {
+			return d
+		}
+		return 0
+	}
+	return 0
+}
+
+// HTTPError is a non-2xx, non-5xx, non-429 response (i.e. permanent 4xx). Don't queue these.
 type HTTPError struct {
 	StatusCode int
 	Body       string
@@ -114,6 +165,14 @@ func (c *Client) post(path string, body, out any, token string) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	switch {
+	case resp.StatusCode == http.StatusTooManyRequests:
+		respBody, _ := io.ReadAll(resp.Body)
+		retryAfter := ParseRetryAfter(resp.Header.Get("Retry-After"))
+		return &RateLimitError{
+			StatusCode: resp.StatusCode,
+			RetryAfter: retryAfter,
+			Body:       string(respBody),
+		}
 	case resp.StatusCode >= 500:
 		respBody, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("%w: 5xx: %s", ErrUnreachable, string(respBody))

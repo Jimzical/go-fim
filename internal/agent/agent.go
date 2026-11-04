@@ -6,12 +6,15 @@ package agent
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"path/filepath"
 	"sync/atomic"
+	"time"
 
 	"go.etcd.io/bbolt"
 	"golang.org/x/sync/errgroup"
@@ -25,9 +28,22 @@ import (
 	"github.com/Jimzical/go-fim/internal/walker"
 )
 
+// ComputeFullJitter returns a random duration in [0, maxJitter) using full jitter.
+// Returns 0 if maxJitter <= 0.
+func ComputeFullJitter(maxJitter time.Duration) time.Duration {
+	if maxJitter <= 0 {
+		return 0
+	}
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(maxJitter)))
+	if err != nil {
+		return 0
+	}
+	return time.Duration(n.Int64())
+}
+
 // Run is the default scan loop: load config, walk + hash + diff, write a
 // report locally, then POST it (or queue for replay if the server is down).
-func Run(cfgPath string, verboseFlag bool, local bool) (err error) {
+func Run(cfgPath string, verboseFlag bool, local bool, jitter ...time.Duration) (err error) {
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		if local && errors.Is(err, os.ErrNotExist) {
@@ -47,6 +63,18 @@ func Run(cfgPath string, verboseFlag bool, local bool) (err error) {
 	}
 
 	log := logger.New(verboseFlag)
+
+	effectiveJitter := cfg.Jitter
+	if len(jitter) > 0 && jitter[0] > 0 {
+		effectiveJitter = jitter[0]
+	}
+	if effectiveJitter > 0 {
+		sleep := ComputeFullJitter(effectiveJitter)
+		if sleep > 0 {
+			log.Info("applying randomized schedule jitter", "jitter", sleep)
+			time.Sleep(sleep)
+		}
+	}
 
 	// Create parent directories for DBPath and HistoryDir if they don't exist
 	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0755); err != nil {
@@ -161,6 +189,12 @@ func sendOrQueue(log *slog.Logger, c *client.Client, rep report.Report, path str
 	switch {
 	case err == nil:
 		log.Info("report sent")
+	case errors.Is(err, client.ErrRateLimited):
+		var rle *client.RateLimitError
+		if errors.As(err, &rle) && rle.RetryAfter > 0 {
+			log.Warn("rate limited by server", "retry_after", rle.RetryAfter)
+		}
+		queueForReplay(log, path, "rate limited")
 	case errors.Is(err, client.ErrUnreachable):
 		queueForReplay(log, path, "unreachable")
 	default: // *HTTPError or other non-retryable
@@ -207,6 +241,14 @@ func replayPending(log *slog.Logger, c *client.Client, dir string) bool {
 			} else {
 				log.Info("replayed", "path", p)
 			}
+		case errors.Is(err, client.ErrRateLimited):
+			var rle *client.RateLimitError
+			if errors.As(err, &rle) && rle.RetryAfter > 0 {
+				log.Warn("server rate limited; halting replay", "retry_after", rle.RetryAfter, "remaining", len(pending)-i)
+			} else {
+				log.Warn("server rate limited; halting replay", "remaining", len(pending)-i)
+			}
+			return true
 		case errors.Is(err, client.ErrUnreachable):
 			log.Warn("server still unreachable; halting replay", "remaining", len(pending)-i)
 			return true

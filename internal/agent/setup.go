@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Jimzical/go-fim/internal/client"
 	"github.com/Jimzical/go-fim/internal/config"
@@ -16,6 +17,7 @@ import (
 type SetupOpts struct {
 	ConfigPath string
 	Token      string
+	Jitter     time.Duration
 }
 
 // Setup runs the one-shot registration handshake: calls POST /api/setup with
@@ -34,6 +36,18 @@ func Setup(opts SetupOpts) (err error) {
 	}
 
 	log := logger.New(false)
+
+	effectiveJitter := cfg.Jitter
+	if opts.Jitter > 0 {
+		effectiveJitter = opts.Jitter
+	}
+	if effectiveJitter > 0 {
+		sleep := ComputeFullJitter(effectiveJitter)
+		if sleep > 0 {
+			log.Info("applying randomized schedule jitter", "jitter", sleep)
+			time.Sleep(sleep)
+		}
+	}
 
 	// Create parent directory for DBPath if it doesn't exist
 	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0755); err != nil {
@@ -62,6 +76,16 @@ func Setup(opts SetupOpts) (err error) {
 		var httpErr *client.HTTPError
 		if errors.As(err, &httpErr) && httpErr.StatusCode == 409 {
 			log.Info("already registered", "agent_id", agentID)
+			return nil
+		}
+		var rateLimitErr *client.RateLimitError
+		if errors.As(err, &rateLimitErr) {
+			retryDuration := rateLimitErr.RetryAfter
+			if retryDuration == 0 {
+				retryDuration = 5 * time.Second
+			}
+			log.Warn("setup rate limited by server", "retry_after", retryDuration)
+			fmt.Fprintf(os.Stderr, "Server rate limit exceeded. Please back off and retry setup after %v.\n", retryDuration)
 			return nil
 		}
 		return fmt.Errorf("register: %w", err)
